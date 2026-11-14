@@ -30,8 +30,8 @@ A lightweight, self-hosted alternative to tools like Wispr Flow. You pay only fo
 
 ```bash
 # 1. Clone
-git clone https://github.com/<your-username>/scribe-dictate.git
-cd scribe-dictate
+git clone https://github.com/alefbetac/scribe.git
+cd scribe
 
 # 2. Configure
 cp .env.example .env
