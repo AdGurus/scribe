@@ -1,0 +1,17 @@
+# Secrets & personal config
+.env
+.env.*
+!.env.example
+keyterms.txt
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# macOS / build
+.DS_Store
+build/
+dist/
+*.app/

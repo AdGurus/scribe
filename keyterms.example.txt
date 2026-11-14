@@ -1,0 +1,14 @@
+# Words Scribe should always get right: brand names, client names, product names, jargon.
+#
+# To use: copy this file to keyterms.txt (or click "Edit keyterms…" in the menu-bar app).
+# keyterms.txt is git-ignored, so your personal terms stay private.
+#
+# Rules: one term per line · max 50 characters and 5 words each · max 1000 terms
+#        lines starting with # are ignored · characters < > { } [ ] \ are not allowed
+# Cost:  keyterms add roughly 20% to the transcription price. Leave the file empty if you don't need them.
+#
+# Examples (remove the # to enable):
+# ElevenLabs
+# Kubernetes
+# PostgreSQL
+# Performance Max
