@@ -123,15 +123,15 @@ def load_keyterms() -> list[str]:
     return terms[:1000]
 
 
-def resolve_input_device():
-    if INPUT_DEVICE is None:
-        return None
-    if INPUT_DEVICE.isdigit():
-        return int(INPUT_DEVICE)
+def resolve_input_device(device: str | int | None) -> int | None:
+    if device is None or isinstance(device, int):
+        return device
+    if device.isdigit():
+        return int(device)
     for idx, dev in enumerate(sd.query_devices()):
-        if dev["max_input_channels"] > 0 and INPUT_DEVICE.lower() in dev["name"].lower():
+        if dev["max_input_channels"] > 0 and device.lower() in dev["name"].lower():
             return idx
-    log(f"⚠ INPUT_DEVICE '{INPUT_DEVICE}' not found — using system default mic")
+    log(f"⚠ INPUT_DEVICE '{device}' not found — using system default mic")
     return None
 
 
@@ -153,7 +153,7 @@ def permissions(prompt: bool = False) -> dict[str, bool]:
 # Audio
 # --------------------------------------------------------------------------- #
 class Recorder:
-    def __init__(self, device):
+    def __init__(self, device: str | int | None):
         self.device = device
         self.frames: list[np.ndarray] = []
         self.stream: sd.InputStream | None = None
@@ -162,13 +162,30 @@ class Recorder:
         self.n_frames = 0
 
     def start(self) -> None:
-        self.frames, self.n_frames = [], 0
-        self.stream = sd.InputStream(
-            samplerate=SAMPLE_RATE, channels=1, dtype="int16",
-            device=self.device, callback=self._callback,
-        )
-        self.stream.start()
+        try:
+            self.stream = self._open_stream()
+        except sd.PortAudioError as exc:
+            # PortAudio caches Core Audio devices until it is reinitialized.
+            # This recorder owns the only stream and _open_stream has cleaned it up.
+            log(f"⚠ Microphone start failed ({exc}) — refreshing audio devices and retrying")
+            if sd._initialized:
+                sd._terminate()
+            sd._initialize()
+            self.stream = self._open_stream()
         self.started_at = time.monotonic()
+
+    def _open_stream(self) -> sd.InputStream:
+        self.frames, self.n_frames = [], 0
+        stream = sd.InputStream(
+            samplerate=SAMPLE_RATE, channels=1, dtype="int16",
+            device=resolve_input_device(self.device), callback=self._callback,
+        )
+        try:
+            stream.start()
+        except sd.PortAudioError:
+            stream.close()
+            raise
+        return stream
 
     def _callback(self, indata, frames, time_info, status) -> None:
         if self.n_frames < self.max_frames:
@@ -339,7 +356,7 @@ class Engine:
 
         self.keyterms = load_keyterms()
         self.scribe = Scribe(self.keyterms)
-        self.recorder = Recorder(resolve_input_device())
+        self.recorder = Recorder(INPUT_DEVICE)
 
         # state (read by the UI)
         self.enabled = True
